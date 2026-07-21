@@ -257,16 +257,15 @@ static void draw_line(void) {
 		}
 		
 		if (how_many_chars_fit_on_this_line == 0) {
+			if (context.terminal_y % context.terminal_rows == 0) {
+				context.terminal_y_begin_line--; /* como uma linha foi scrolada tenho que fazer isso. */
+			}
 			write(STDOUT_FILENO, "\r\n", 2);
 			context.terminal_y++;
 			context.terminal_x = 1;
 		}
 		
 		if (i == context.line_index) {
-			if (context.terminal_x > context.terminal_columns) {
-				int z = 10;
-				z++;
-			}
 			cursor_x = context.terminal_x;
 			cursor_y = context.terminal_y;
 		}
