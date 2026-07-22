@@ -8,7 +8,8 @@
 
 /*** defines ***/
 #define CTRL_KEY(k) ((k) & 0x9f)
-#define LINE_CAPACITY 256
+#define LINE_CAPACITY 10
+#define HISTORY_CAPACITY 3
 
 
 
@@ -33,6 +34,7 @@ typedef struct {
 	input_actions action;
 } input;
 
+
 typedef struct {
 	struct termios original_termios;
 	int terminal_x;
@@ -46,6 +48,9 @@ typedef struct {
 	int line_length;
 	int should_exit;
 	const char *prompt;
+	char *history; /* this will be purposefully lekead so don't be a square about it and let the os handles this.*/
+	int history_index; /* this should go from 0 to HISTORY_CAPACITY - 1*/
+	int history_length; /* how many lines are currently in history */
 } editline_context;
 
 
@@ -57,7 +62,7 @@ static int handle_low_level_input(input *in);
 static int handle_high_level_input(input in);
 static void draw_line(void);
 static int prepare_for_read_line(const char *prompt);
-
+static void copy_history_line_to_current_line(void);
 
 /*** context ***/
 static editline_context context = {0};
@@ -113,6 +118,15 @@ static int get_terminal_coordinate_and_size(int *x, int *y, int *columns, int *r
 		scanf("\033[%d;%dR", y, x);
 	}
 	return 0;
+}
+
+/*** HISTORY ***/
+static void copy_history_line_to_current_line(void) {
+	const char *history_line = &context.history[context.history_index * LINE_CAPACITY];
+	int history_line_length = strlen(history_line);
+	context.line_length = history_line_length;
+	memcpy(context.line, history_line, history_line_length);
+	context.line_index = context.line_length;
 }
 
 /*** input ***/
@@ -224,9 +238,19 @@ static int handle_high_level_input(input in) {
 			context.line_index = context.line_length;
 			break;
 		case ENTER:
+			if (context.history_length < HISTORY_CAPACITY) {
+				memcpy(context.history + (context.history_length++ * LINE_CAPACITY), context.line, LINE_CAPACITY);
+				context.history_index++;
+			}	
 			context.line[context.line_length] = '\0';
 			write(STDOUT_FILENO, "\r\n", 2);
 			context.should_exit = 1;
+			break;
+		case PREVIOUS_LINE:
+			if (context.history_index) {
+				context.history_index--;
+				copy_history_line_to_current_line();
+			}
 			break;
 		case EXIT:
 			context.should_exit = 1;
@@ -310,6 +334,17 @@ static int prepare_for_read_line(const char *prompt) {
 	context.line_index = 0;
 	context.line_length = 0;
 	context.should_exit = 0;
+
+	if (context.history == (void *)0) {
+		context.history = calloc(LINE_CAPACITY * HISTORY_CAPACITY, sizeof(char));
+		if (context.history == (void *) 0) return -1; /* allocation failure */
+		context.history_length = 0;
+		context.history_index = 0;
+	}
+
+	
+	
+	
 	return 0;
 }
 
