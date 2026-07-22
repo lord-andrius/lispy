@@ -45,6 +45,7 @@ typedef struct {
 	int line_index;
 	int line_length;
 	int should_exit;
+	const char *prompt;
 } editline_context;
 
 
@@ -55,7 +56,7 @@ static int get_terminal_coordinate_and_size(int *x, int *y, int *columns, int *r
 static int handle_low_level_input(input *in);
 static int handle_high_level_input(input in);
 static void draw_line(void);
-static int prepare_for_read_line(void);
+static int prepare_for_read_line(const char *prompt);
 
 
 /*** context ***/
@@ -249,9 +250,8 @@ static void draw_line(void) {
 	printf("\033[0J"); /* clear screen */
 	fflush(stdout);
 	while (i < context.line_length) {
-		int prompt_lenght = context.terminal_x - 1;
+		int prompt_lenght = context.prompt == (void *)0 ? 0 : strlen(context.prompt);
 		int how_many_chars_fit_on_this_line = context.terminal_columns - prompt_lenght;
-
 		
 		while (1) {
 			if (how_many_chars_fit_on_this_line < 1 || i >= context.line_length) {
@@ -289,7 +289,7 @@ static void draw_line(void) {
 
 }
 
-static int prepare_for_read_line(void) {
+static int prepare_for_read_line(const char *prompt) {
 	if (enter_raw_mode() == -1) {
 		return -1;
 	}
@@ -303,6 +303,7 @@ static int prepare_for_read_line(void) {
 		return -1;
 	}
 
+	context.prompt = prompt;
 	context.terminal_x_begin_line = context.terminal_x;
 	context.terminal_y_begin_line = context.terminal_y;
 	context.line[0] = '\0';
@@ -312,12 +313,15 @@ static int prepare_for_read_line(void) {
 	return 0;
 }
 
-int readline(char **line) {
+int readline(char **line, const char *prompt) {
 	input in = {0};
+
+	write(STDOUT_FILENO, prompt, strlen(prompt));
 	
-	if (prepare_for_read_line() == -1) {
+	if (prepare_for_read_line(prompt) == -1) {
 		return -1;
 	}
+
 	
 	while(1) {
 		handle_low_level_input(&in);

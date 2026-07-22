@@ -4,6 +4,6 @@
 
 
 /*** input ***/
-int readline(char **line);
+int readline(char **line, const char *prompt);
 
 #endif

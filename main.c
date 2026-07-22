@@ -14,17 +14,12 @@ void write_welcome_message(void) {
 	puts("Press Ctrl+c or Ctrl+d to exit.");
 }
 
-void write_prompt(void) {
-	fputs("lispy> ", stdout);
-	fflush(stdout);
-}
 
 int main(void) {
 	char *line;
 	write_welcome_message();
 	do {
-		write_prompt();
-		if (readline(&line) == 0 && line != (void *)0) { /* CHECK */
+		if (readline(&line, "lispy> ") == 0 && line != (void *)0) { /* CHECK */
 			printf("%s\n", line);
 		}
 	} while (line != (void *)0);
