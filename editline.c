@@ -156,6 +156,12 @@ static int handle_low_level_input(input *in) {
 						case 'C':
 							in->action = MOVE_RIGHT;
 							break;
+						case 'H':
+							in->action = HOME;
+							break;
+						case 'F':
+							in->action = END;
+							break;
 					}
 				} else {
 					in->action = NO_OP;
@@ -210,6 +216,12 @@ static int handle_high_level_input(input in) {
 		case MOVE_RIGHT:
 			if (context.line_index < context.line_length) context.line_index++;
 			break;
+		case HOME:
+			context.line_index = 0;
+			break;
+		case END:
+			context.line_index = context.line_length;
+			break;
 		case ENTER:
 			context.line[context.line_length] = '\0';
 			write(STDOUT_FILENO, "\r\n", 2);
@@ -258,7 +270,7 @@ static void draw_line(void) {
 		
 		if (how_many_chars_fit_on_this_line == 0) {
 			if (context.terminal_y % context.terminal_rows == 0) {
-				context.terminal_y_begin_line--; /* como uma linha foi scrolada tenho que fazer isso. */
+				context.terminal_y_begin_line--; /* we need to do this becouse scrolling. :) */
 			}
 			write(STDOUT_FILENO, "\r\n", 2);
 			context.terminal_y++;
