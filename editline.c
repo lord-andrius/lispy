@@ -249,8 +249,10 @@ static int handle_high_level_input(input in) {
 		case PREVIOUS_LINE:
 			if (context.history_index) {
 				context.history_index--;
-				copy_history_line_to_current_line();
+			} else {
+				context.history_index = context.history_length ? context.history_length - 1 : 0;
 			}
+			copy_history_line_to_current_line();
 			break;
 		case EXIT:
 			context.should_exit = 1;
