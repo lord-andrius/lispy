@@ -8,8 +8,8 @@
 
 /*** defines ***/
 #define CTRL_KEY(k) ((k) & 0x9f)
-#define LINE_CAPACITY 10
-#define HISTORY_CAPACITY 3
+#define LINE_CAPACITY 256
+#define HISTORY_CAPACITY 128
 
 
 
@@ -241,6 +241,7 @@ static int handle_high_level_input(input in) {
 			context.line_index = context.line_length;
 			break;
 		case ENTER:
+			context.line[context.line_length] = '\0';
 			if (context.history_index == context.history_length) {
 				if (context.history_length < HISTORY_CAPACITY) {
 					memcpy(
@@ -278,8 +279,7 @@ static int handle_high_level_input(input in) {
 					LINE_CAPACITY
 				);
 				context.history_index = context.history_length;
-			}
-			context.line[context.line_length] = '\0';
+			}			
 			write(STDOUT_FILENO, "\r\n", 2);
 			context.should_exit = 1;
 			break;
@@ -288,7 +288,7 @@ static int handle_high_level_input(input in) {
 			copy_history_line_to_current_line();
 			break;
 		case NEXT_LINE:
-			if (context.history_index < context.history_length + 1) context.history_index++;
+			if (context.history_index < context.history_length) context.history_index++;
 			copy_history_line_to_current_line();
 			break;
 		case EXIT:
