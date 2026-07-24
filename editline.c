@@ -49,8 +49,8 @@ typedef struct {
 	int should_exit;
 	const char *prompt;
 	char *history; /* this will be purposefully lekead so don't be a square about it and let the os handles this.*/
-	int history_index; /* this should go from 0 to HISTORY_CAPACITY - 1*/
-	int history_length; /* how many lines are currently in history */
+	int history_index; /* this should go from 0 to history_length but when it is == to history_length it has a special meaning of adding to the end of history. */
+	int history_length; /* how many lines are currently in history. It goes from 0 to HISTORY_CAPACITY*/
 } editline_context;
 
 
@@ -199,6 +199,7 @@ static int handle_low_level_input(input *in) {
 }
 
 static int handle_high_level_input(input in) {
+	static int previous_history_index = 0;
 	switch (in.action) {
 		case CHAR:
 			if (context.line_length + 1 < LINE_CAPACITY) { /* should be fine to put another char*/
@@ -212,6 +213,7 @@ static int handle_high_level_input(input in) {
 				}
 				context.line[context.line_index++] = in.raw_byte;
 			}
+			context.history_index = context.history_length;
 			break;
 		case DELETE:
 			{
@@ -223,6 +225,7 @@ static int handle_high_level_input(input in) {
 					context.line[context.line_length--] = '\0';
 					context.line_index--;
 				}
+				context.history_index = context.history_length;
 			}
 			break;
 		case MOVE_LEFT:
@@ -238,20 +241,54 @@ static int handle_high_level_input(input in) {
 			context.line_index = context.line_length;
 			break;
 		case ENTER:
-			if (context.history_length < HISTORY_CAPACITY) {
-				memcpy(context.history + (context.history_length++ * LINE_CAPACITY), context.line, LINE_CAPACITY);
-				context.history_index++;
-			}	
+			if (context.history_index == context.history_length) {
+				if (context.history_length < HISTORY_CAPACITY) {
+					memcpy(
+						context.history + (context.history_index * LINE_CAPACITY),
+						context.line,
+						LINE_CAPACITY
+					);
+					context.history_length++;
+					context.history_index++;
+				} else {
+					/* it needs to scroll */
+					int i;
+					for (i = 0; i < context.history_index; i++) {
+						memmove(
+							context.history + (i * LINE_CAPACITY),
+							context.history + ((i + 1) * LINE_CAPACITY),
+							LINE_CAPACITY
+						);
+					}
+					memcpy(
+						context.history + ((context.history_index - 1) * LINE_CAPACITY),
+						context.line,
+						LINE_CAPACITY
+					);
+				}
+			} else {
+				memmove(
+					context.history + (context.history_index * LINE_CAPACITY),
+					context.history + ((context.history_length - 1) * LINE_CAPACITY),
+					LINE_CAPACITY
+				);
+				memcpy(
+					context.history + ((context.history_length - 1) * LINE_CAPACITY),
+					context.line,
+					LINE_CAPACITY
+				);
+				context.history_index = context.history_length;
+			}
 			context.line[context.line_length] = '\0';
 			write(STDOUT_FILENO, "\r\n", 2);
 			context.should_exit = 1;
 			break;
 		case PREVIOUS_LINE:
-			if (context.history_index) {
-				context.history_index--;
-			} else {
-				context.history_index = context.history_length ? context.history_length - 1 : 0;
-			}
+			if (context.history_index) context.history_index--;
+			copy_history_line_to_current_line();
+			break;
+		case NEXT_LINE:
+			if (context.history_index < context.history_length + 1) context.history_index++;
 			copy_history_line_to_current_line();
 			break;
 		case EXIT:
@@ -260,7 +297,6 @@ static int handle_high_level_input(input in) {
 			exit(0);
 			break;
 	}
-	
 	return 0;
 }
 

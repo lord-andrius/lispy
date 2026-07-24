@@ -1,5 +1,5 @@
-[] - Fazer uma api simples de para editar linhas no terminal
+[X] - Fazer uma api simples de para editar linhas no terminal
 	[x] - entrar no modo crú do terminal
 	[X] - fazer as fazer as setas funcionarem
-	[] - fazer um histórico de comandos
-	[] - fazer com que a seta para cima e para baixo move o histórico
+	[X] - fazer um histórico de comandos
+	[X] - fazer com que a seta para cima e para baixo move o histórico
