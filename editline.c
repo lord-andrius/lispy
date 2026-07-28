@@ -187,7 +187,7 @@ static int handle_low_level_input(input *in) {
 	}
 	
 	
-	if (isalnum(input_buffer[0]) || input_buffer[0] == ' ') {
+	if (isalnum(input_buffer[0]) || input_buffer[0] == ' ' || input_buffer[0] == '+' || input_buffer[0] == '-' ||  input_buffer[0] == '*' || input_buffer[0] == '/' || input_buffer[0] == '.') {
 		in->action = CHAR;
 		in->raw_byte = input_buffer[0];
 		return 0;
